@@ -134,3 +134,4 @@ only on Vercel. Expect 100 in production.
 - Real-device-equivalent LCP (slow 4G, 4× CPU): **1.45s**. Lighthouse's higher
   figure comes from its more pessimistic simulated throttling.
 # aboutadarsh
+# aboutadarsh
