@@ -1,0 +1,45 @@
+{
+  "name": "@portfolio/web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Next.js frontend: the public site and the admin UI. Data comes from @portfolio/api.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@gsap/react": "^2.1.2",
+    "@hookform/resolvers": "^5.9.1",
+    "@portfolio/shared": "*",
+    "@react-three/fiber": "^9.8.2",
+    "@react-three/postprocessing": "^3.2.2",
+    "@vercel/analytics": "^1.6.1",
+    "clsx": "^2.1.1",
+    "gsap": "^3.15.0",
+    "next": "^16.3.4",
+    "next-mdx-remote": "^5.0.0",
+    "next-themes": "^0.4.6",
+    "postprocessing": "^6.39.5",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-hook-form": "^7.87.0",
+    "server-only": "^0.0.1",
+    "simple-icons": "^16.35.0",
+    "tailwind-merge": "^3.6.0",
+    "three": "^0.186.1",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "@types/three": "^0.186.0",
+    "postcss": "^8.5.26",
+    "tailwindcss": "^4.3.3"
+  }
+}

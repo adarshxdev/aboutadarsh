@@ -1,139 +1,153 @@
-# Adarsh Bajpai — Portfolio
+# Adarsh Bajpai — Portfolio & CMS
 
-Built to [`plan.md`](plan.md). Next.js 16 (App Router, RSC), TypeScript strict,
-Tailwind v4, Postgres via Drizzle.
+A personal site with its own content management system: an immersive WebGL home page, résumé,
+experience, work/freelance/side/personal projects, hobbies and published content, all editable from
+a password-protected admin with file uploads. Built to be re-skinned into a company website by
+changing content, not code.
+
+**Stack:** Next.js 16 · React 19 · Tailwind v4 · Three.js (React Three Fiber) · GSAP · Express 5 ·
+Postgres (Drizzle) · S3-compatible storage · Upstash Redis · Resend · Zod · Vitest · Playwright ·
+Docker · GitHub Actions · Vercel.
+
+## Architecture
+
+```
+                 browser
+                    │  only ever talks to the site's own origin
+                    ▼
+ ┌──────────────── apps/web (Next.js) ────────────────┐
+ │ public pages · /admin UI · /api/revalidate          │
+ │ /api/*  ── rewrite ──────────────────────┐          │
+ └──────────────────────────────────────────┼──────────┘
+                                            ▼
+ ┌──────────────── apps/api (Express) ────────────────┐
+ │ /api/content · /api/auth · /api/admin · /api/contact│──► Postgres (content, media, contacts)
+ │ validation, auth, rate limits, uploads, email       │──► S3 storage (presigned browser uploads)
+ └─────────────────────────────────────────────────────┘──► Redis (rate limits) · Resend (email)
+
+ packages/shared — Zod schemas, default content, admin form definitions (used by both apps)
+```
+
+- **One origin.** `/api/*` on the site is proxied to Express, so the admin session cookie is
+  first-party and there's no CORS to manage.
+- **Content is data.** Every entry is validated by a Zod schema in `packages/shared`; the same schema
+  drives the admin form, the API validation, seeding and the pages. Adding a field needs no migration.
+- **Instant updates.** Pages are cached; an admin save calls the web app's revalidation webhook, so
+  the change is live on the next view (with a 5-minute backstop).
+- **Degrades gracefully.** With no environment variables at all, the site still builds and runs on
+  the default content in `packages/shared/src/content`.
+
+## Quick start
+
+Requires Node 22+ and Docker.
 
 ```bash
 npm install
-cp .env.example .env.local     # every variable is optional
-npm run dev                    # http://localhost:3000
+cp apps/api/.env.example apps/api/.env          # local Docker values are prefilled
+cp apps/web/.env.example apps/web/.env.local
+npm run admin:hash -- "<your password>"         # paste the two lines into apps/api/.env, set ADMIN_EMAIL
+# put the same random string in REVALIDATE_SECRET in both env files
+npm run infra:up                                # Postgres, Redis, S3 storage
+npm run db:migrate && npm run db:seed
+npm run dev                                     # api :4000 + web :3000
 ```
 
-**The app runs and builds with no environment variables at all.** Each
-integration degrades to a sensible fallback, so nothing is blocked on
-provisioning accounts — see [Environment](#environment).
+- Site: http://localhost:3000 · Admin: http://localhost:3000/admin · Health: http://localhost:3000/api/health
+- Full production build in Docker instead: `docker compose --profile app up -d --build`
 
-## Editing content
+## Admin
 
-**You never edit a `.tsx` file to change what the site says.** Every page
-derives from typed data in [`content/`](content/):
+Sign in at `/admin` with `ADMIN_EMAIL` and the password whose hash is in `ADMIN_PASSWORD_HASH`. The
+password itself is never stored anywhere — only a scrypt hash. Sessions are signed, httpOnly,
+SameSite=Lax cookies (7 days); sign-in is rate limited.
 
-| To change | Edit |
+| Section | What it edits |
 |---|---|
-| A job | `content/experience.ts` |
-| A project | `content/projects.ts` |
-| A skill | `content/skills.ts` |
-| A degree | `content/education.ts` |
-| An award | `content/achievements.ts` |
-| A quote | `content/testimonials.ts` |
-| Name, headline, socials, availability | `content/profile.ts` |
-| A case study's prose | `content/work/<slug>.mdx` |
+| Profile | Name, headline, pitch, summary, socials, résumé PDF, portrait (drawn as particles on the home page), music |
+| Home headings | Section headings on the home page |
+| Experience, Education, Skills, Achievements, Testimonials | Résumé content |
+| Projects | Work, freelance, side and personal projects; cover, video, gallery, metrics |
+| Case studies | Long-form write-ups (MDX) linked to a project |
+| Hobbies, Content | Life outside work; videos, posts, talks, articles |
+| Media | Upload images, PDFs, audio and video (drag and drop, up to 200 MB) |
 
-Add an entry by appending an object; remove one by deleting it, or set
-`published: false` to hide it without losing the text.
-
-**Ordering is derived, never hand-maintained** — experience sorts by `start`,
-projects by `year`, and `featured: true` pins to the top.
-
-Everything downstream updates on its own: the timeline, `/work` and its filter
-chips, `/work/[slug]` routes, `/resume` (web and print), JSON-LD, OG images,
-`sitemap.xml`, and the aggregate stats ("3+ yrs", "20+ technologies"), which are
-computed rather than written down.
-
-### Adding a case study
-
-1. Add the project to `content/projects.ts` with `links.caseStudy: true`
-2. Create `content/work/<slug>.mdx` with `problem`, `constraints[]` and
-   `outcome` frontmatter
-3. `/work/<slug>` starts working — no routing changes
-
-### NDA-restricted work
-
-Set `confidential: true`. The gallery is suppressed and a "Details generalised
-under NDA" badge appears; the narrative and architecture still render.
-`content:check` fails the build if a confidential project ever ships a gallery.
-
-### Guardrails
-
-```bash
-npm run content:check
-```
-
-Zod validates fields at import (so a typo fails `next build`, naming the file
-and field). `content:check` adds the cross-file rules a single schema can't see:
-unique slugs, `caseStudy` references that resolve, MDX files that exist for
-projects claiming one, images present in `public/`, sane date ranges, and no
-confidential entry with media. It runs in CI.
+Sections with no entries hide themselves on the site. Files upload straight from the browser to
+storage with presigned URLs, then the API verifies type and size.
 
 ## Environment
 
-| Variable | Unset behaviour |
+All optional; each missing integration falls back as shown. Full annotated lists:
+[`apps/api/.env.example`](apps/api/.env.example), [`apps/web/.env.example`](apps/web/.env.example).
+
+**API** (`apps/api/.env`)
+
+| Variable | Without it |
 |---|---|
-| `DATABASE_URL` | Submissions are emailed and logged, not stored |
-| `RESEND_API_KEY` | Submissions are logged to the server console |
-| `UPSTASH_REDIS_*` | In-memory rate limiter (per-instance only) |
-| `TURNSTILE_SECRET_KEY` | Honeypot + timing check only |
-| `NEXT_PUBLIC_CAL_LINK` | Booking card is hidden |
-| `IP_HASH_SALT` | **Set this in production** — it salts the IP hash |
-| `NEXT_PUBLIC_SITE_URL` | Falls back to `localhost:3000` (affects OG/canonical) |
+| `DATABASE_URL` | Default content, read-only admin, contact messages emailed/logged only |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD_HASH`, `AUTH_SECRET` | Admin sign-in disabled |
+| `S3_*` | Uploads disabled |
+| `UPSTASH_REDIS_REST_URL`, `_TOKEN` | Per-instance in-memory rate limits |
+| `RESEND_API_KEY`, `CONTACT_TO_EMAIL`, `CONTACT_FROM_EMAIL` | Contact messages logged, not emailed |
+| `SITE_URL`, `WEB_URL`, `REVALIDATE_SECRET` | Admin edits appear within 5 minutes instead of instantly |
+| `TURNSTILE_SECRET_KEY` | Honeypot + timing checks only |
+| `IP_HASH_SALT` | Development salt (set it in production) |
 
-With a database: `npm run db:generate && npm run db:push`.
+**Web** (`apps/web/.env.local`): `API_URL`, `NEXT_PUBLIC_SITE_URL`, `REVALIDATE_SECRET`, optional
+`NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `NEXT_PUBLIC_CAL_LINK`.
 
-## Scripts
+## Testing
 
-| | |
-|---|---|
-| `npm run dev` | Dev server |
-| `npm run build` / `start` | Production build / serve |
-| `npm run typecheck` | `tsc --noEmit` |
-| `npm run content:check` | Cross-file content validation |
-| `npm run db:generate` / `db:push` | Drizzle migrations |
+```bash
+npm test                 # Vitest: shared, API (supertest), web
+npm run test:e2e         # Playwright against the running stack (desktop + mobile)
+npm run lint && npm run typecheck && npm run format:check
+```
+
+API integration tests run against a real Postgres when `TEST_DATABASE_URL` is set (CI does this).
+Admin end-to-end tests run when `E2E_ADMIN_EMAIL` / `E2E_ADMIN_PASSWORD` are set.
+
+CI (`.github/workflows/ci.yml`) runs every check and test, the end-to-end suite on a Docker stack,
+the Docker image builds, and a non-blocking Lighthouse report.
+
+## Deployment
+
+Two Vercel projects from this repo — `apps/web` (Next.js) and `apps/api` (Express, zero-config). With
+Vercel's GitHub integration, **every push to `main` deploys both**, and pull requests get preview
+deployments. The API's build applies database migrations and seeds an empty database.
+
+Free-tier services that fit: Supabase or Neon (Postgres), Cloudflare R2 (files), Upstash (Redis),
+Resend (email). Step-by-step setup, env vars per project, verification and rollback:
+[`.claude/skills/deploy/SKILL.md`](.claude/skills/deploy/SKILL.md).
+
+## Project structure
+
+```
+apps/web/            Next.js app
+  src/app/(site)/    résumé, project case studies, privacy, and hobbies/content (shown when they have entries)
+  src/app/justme/    the intro as its own page: the name in beads
+  src/app/casual/    the casual, off-the-clock version (Miami theme); content in /admin → Casual page, Moments
+  src/app/admin/     admin UI
+  src/components/    immersive/ (WebGL home), admin/, sections/, ui/
+apps/api/            Express app
+  src/routes/        public, auth, admin
+  src/db/ drizzle/   schema and migrations
+packages/shared/     schemas, default content, CMS definitions, validation
+e2e/                 Playwright tests
+docker/              local storage bootstrap
+.claude/skills/      workflows for Claude Code: local-dev, frontend, backend, content-model,
+                     database, testing, deploy, rebrand, ship
+```
 
 ## Notes on the implementation
 
-**No animation library.** Every effect in plan.md §5 (1–9) is CSS or a few lines
-of vanilla JS. Motion was in the original stack, but it cost ~55KB gzipped —
-against a 150KB budget where the React 19 + Next 16 baseline is already ~148KB.
-Removing it took mobile Lighthouse performance from 90 to 96–98.
+- **The email address is never contiguous in the HTML.** It's split into `user`/`domain` and
+  reassembled after hydration, so address harvesters don't match it; it's also kept out of JSON-LD.
+- **Privacy.** Raw IPs are never stored (salted hashes only); analytics events use a daily-rotating
+  anonymous id and no cookies.
+- **The home page works without its effects.** All text is server-rendered; the WebGL stage loads
+  after first paint and respects reduced motion, a Motion toggle, and devices without WebGL.
+- **Security defaults.** Helmet headers, HSTS, strict body limits, rate-limited contact/sign-in,
+  same-origin checks on admin writes, constant-time password verification, no secrets in the repo.
 
-**Nothing above the fold waits for JS.** The hero uses CSS animations, not
-scroll-triggered ones. Gating it on hydration put LCP at 3.5s on throttled
-mobile.
-
-**Client components never import `@/content`.** Doing so pulls Zod and every
-collection into the browser bundle. Server components read content and pass
-plain data down (see `ExperienceTimeline.tsx`).
-
-**The email address is never contiguous in the HTML.** It's split into
-`user`/`domain` props and reassembled after hydration, so it doesn't match the
-regex harvesters run — pre-hydration the page shows `user [at] domain`. The
-phone number appears only in the PDF, never on the site.
-
-**Reduced motion removes reveals entirely** rather than shortening them, so no
-content can be left invisible waiting for a scroll trigger.
-
-## Measured
-
-Lighthouse mobile, production build, localhost:
-
-| Route | Perf | A11y | BP | SEO | LCP | CLS |
-|---|---|---|---|---|---|---|
-| `/` | 98 | 100 | 96* | 100 | 2.5s | 0 |
-| `/work` | 96 | 100 | 96* | 100 | 2.7s | 0 |
-| `/about` | 96 | 100 | 96* | 100 | 2.7s | 0 |
-| `/resume` | 98 | 100 | 96* | 100 | 2.5s | 0.013 |
-| `/contact` | 94 | 100 | 96* | 100 | 3.2s | 0 |
-
-\* The only deduction is a 404 on `/_vercel/insights/script.js`, which exists
-only on Vercel. Expect 100 in production.
-
-- **0 WCAG A/AA violations** (axe-core, 8 pages × light and dark)
-- **No horizontal overflow** at 320/375/390/768/1440/1920
-- **Initial JS ≤ 150KB** on every route except `/contact` (246KB — react-hook-form
-  + Zod, kept for the shared client/server schema)
-- Real-device-equivalent LCP (slow 4G, 4× CPU): **1.45s**. Lighthouse's higher
-  figure comes from its more pessimistic simulated throttling.
-# aboutadarsh
-# aboutadarsh
-# aboutadarsh
-# aboutadarsh
+Background and design decisions: [`plan.md`](plan.md) (original build) and
+[`immersive-plan.md`](immersive-plan.md) (home page).

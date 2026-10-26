@@ -1,0 +1,772 @@
+/* ============================================================
+   Casual page — Miami / retrowave. Scoped to .casual.
+   ============================================================ */
+
+html:has(.casual),
+html:has(.casual) body {
+  background: #12052b;
+}
+
+.casual {
+  --pink: #ff3ea5;
+  --orange: #ff8a3d;
+  --sun: #ffd166;
+  --teal: #00e5d4;
+  --violet: #7b2ff7;
+  --night: #12052b;
+  --ink: #fff4fb;
+  --mist: #f6d9f0b8;
+  --neon: var(--font-neon), 'Arial Black', sans-serif;
+  --script: var(--font-script), cursive;
+
+  min-height: 100dvh;
+  overflow-x: clip;
+  color: var(--ink);
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  background:
+    radial-gradient(80% 50% at 50% 0%, #3b0b5e 0%, transparent 70%),
+    linear-gradient(#1a0633, var(--night) 40%, #0b0320);
+  color-scheme: dark;
+}
+
+.casual ::selection {
+  background: #ff3ea566;
+}
+
+.casual :focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 3px;
+}
+
+/* ---------- header ---------- */
+
+.cz-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 24px;
+  padding: max(12px, env(safe-area-inset-top)) clamp(16px, 4vw, 48px) 12px;
+  background: linear-gradient(#12052bf2, #12052b00);
+  backdrop-filter: blur(8px);
+}
+
+.cz-logo {
+  font-family: var(--script);
+  font-size: 30px;
+  line-height: 1;
+  color: var(--ink);
+  text-shadow:
+    0 0 6px var(--pink),
+    0 0 18px var(--pink);
+}
+
+.cz-logo span {
+  color: var(--teal);
+  text-shadow: 0 0 10px var(--teal);
+}
+
+.cz-nav {
+  display: none;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.cz-nav a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  padding: 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mist);
+  transition:
+    color 0.2s,
+    text-shadow 0.2s;
+}
+
+.cz-nav a:hover {
+  color: var(--ink);
+  text-shadow: 0 0 10px var(--pink);
+}
+
+.cz-header .mode {
+  margin-left: auto;
+}
+
+@media (width >= 820px) {
+  .cz-nav {
+    display: flex;
+  }
+  .cz-header .mode {
+    margin-left: 0;
+  }
+}
+
+/* ---------- hero ---------- */
+
+.cz-hero {
+  position: relative;
+  display: grid;
+  min-height: min(92svh, 900px);
+  align-items: end;
+  overflow: hidden;
+  padding: 0 clamp(16px, 4vw, 48px) clamp(40px, 8vh, 80px);
+}
+
+.cz-sky {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Striped retrowave sun. */
+.cz-sun {
+  position: absolute;
+  left: 50%;
+  top: 14%;
+  width: min(70vw, 520px);
+  aspect-ratio: 1;
+  translate: -50% 0;
+  border-radius: 50%;
+  background: linear-gradient(var(--sun), var(--orange) 45%, var(--pink) 80%);
+  box-shadow:
+    0 0 60px #ff3ea588,
+    0 0 140px #ff8a3d55;
+  -webkit-mask-image: linear-gradient(
+    #000 0 52%,
+    transparent 52% 55%,
+    #000 55% 62%,
+    transparent 62% 66%,
+    #000 66% 72%,
+    transparent 72% 77%,
+    #000 77% 82%,
+    transparent 82% 88%,
+    #000 88% 92%,
+    transparent 92%
+  );
+  mask-image: linear-gradient(
+    #000 0 52%,
+    transparent 52% 55%,
+    #000 55% 62%,
+    transparent 62% 66%,
+    #000 66% 72%,
+    transparent 72% 77%,
+    #000 77% 82%,
+    transparent 82% 88%,
+    #000 88% 92%,
+    transparent 92%
+  );
+  animation: cz-sun 6s ease-in-out infinite alternate;
+}
+
+@keyframes cz-sun {
+  to {
+    translate: -50% 3%;
+    filter: saturate(1.25);
+  }
+}
+
+.cz-palm {
+  position: absolute;
+  bottom: 24%;
+  height: min(70vh, 620px);
+  overflow: visible;
+  transform-origin: 45% 100%;
+  filter: drop-shadow(0 0 6px #ff3ea5aa) drop-shadow(0 0 18px #ff3ea555);
+  animation: cz-sway 7s ease-in-out infinite alternate;
+}
+
+.cz-palm__trunk,
+.cz-palm__frond,
+.cz-palm__nut {
+  fill: #07021a;
+  stroke: var(--pink);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.cz-palm__rings {
+  fill: none;
+  stroke: #ff3ea566;
+  stroke-width: 1.2;
+  vector-effect: non-scaling-stroke;
+}
+
+.cz-palm__nut {
+  stroke: var(--orange);
+}
+
+.cz-palm--l {
+  left: -3%;
+}
+
+.cz-palm--r {
+  right: -3%;
+  transform: scaleX(-1);
+  animation-delay: -3s;
+}
+
+/* Phones: smaller, pushed to the edges, so the headline stays clear. */
+@media (width < 760px) {
+  .cz-palm {
+    height: 34vh;
+    bottom: 44%;
+    opacity: 0.8;
+  }
+  .cz-palm--l {
+    left: -30%;
+  }
+  .cz-palm--r {
+    right: -30%;
+  }
+}
+
+@keyframes cz-sway {
+  to {
+    rotate: 2.5deg;
+  }
+}
+
+/* Neon grid floor, rolling toward the viewer. */
+.cz-grid {
+  position: absolute;
+  left: -50%;
+  right: -50%;
+  bottom: 0;
+  height: 42%;
+  background-image:
+    linear-gradient(var(--pink) 1.5px, transparent 1.5px),
+    linear-gradient(90deg, var(--teal) 1px, transparent 1px);
+  background-size:
+    60px 60px,
+    60px 60px;
+  transform: perspective(320px) rotateX(62deg);
+  transform-origin: 50% 0;
+  -webkit-mask-image: linear-gradient(transparent, #000 30%);
+  mask-image: linear-gradient(transparent, #000 30%);
+  opacity: 0.85;
+  animation: cz-grid 1.6s linear infinite;
+}
+
+@keyframes cz-grid {
+  to {
+    background-position:
+      0 60px,
+      0 60px;
+  }
+}
+
+/* The highway: drawn in the grid's own plane, so the perspective matches. */
+.cz-road {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 13%;
+  translate: -50% 0;
+  background: linear-gradient(90deg, #0b0320 0 2%, #1c0b33 2% 98%, #0b0320 98%);
+  border-inline: 4px solid var(--pink);
+  box-shadow:
+    0 0 18px var(--pink),
+    inset 0 0 26px #ff3ea544;
+}
+
+/* Centre dashes, rolling toward the viewer at the grid's speed. */
+.cz-road::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 5%;
+  min-width: 4px;
+  translate: -50% 0;
+  background: repeating-linear-gradient(var(--sun) 0 40px, transparent 40px 80px);
+  box-shadow: 0 0 10px var(--sun);
+  animation: cz-dash 2.13s linear infinite;
+}
+
+/* Lane lines either side of the centre. */
+.cz-road::before {
+  content: '';
+  position: absolute;
+  inset: 0 22%;
+  border-inline: 2px solid #00e5d499;
+}
+
+@keyframes cz-dash {
+  to {
+    background-position: 0 80px;
+  }
+}
+
+.cz-hero__copy {
+  position: relative;
+  max-width: 46rem;
+}
+
+.cz-kicker {
+  font-family: var(--script);
+  font-size: clamp(20px, 2.4vw, 28px);
+  color: var(--teal);
+  text-shadow: 0 0 12px #00e5d4aa;
+}
+
+.cz-title {
+  margin-top: 8px;
+  font-family: var(--neon);
+  font-weight: 400;
+  font-size: clamp(44px, 9vw, 120px);
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: #fff;
+  text-shadow:
+    0 0 4px #fff,
+    0 0 14px var(--pink),
+    0 0 32px var(--pink),
+    0 0 60px #ff3ea588;
+  animation: cz-flicker 5s infinite;
+}
+
+/* Neon-sign flicker: mostly steady, with the odd stutter. */
+@keyframes cz-flicker {
+  0%,
+  18%,
+  22%,
+  25%,
+  53%,
+  57%,
+  100% {
+    opacity: 1;
+  }
+  20%,
+  24%,
+  55% {
+    opacity: 0.55;
+  }
+}
+
+.cz-intro {
+  margin-top: 16px;
+  max-width: 36rem;
+  font-size: clamp(16px, 1.4vw, 19px);
+  line-height: 1.6;
+  color: var(--mist);
+}
+
+.cz-stickers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.cz-stickers li {
+  rotate: var(--r, 0deg);
+  border: 2px solid #fff;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--night);
+  background: var(--sun);
+  box-shadow: 4px 4px 0 var(--pink);
+  transition:
+    rotate 0.3s,
+    translate 0.3s;
+}
+
+.cz-stickers li:nth-child(3n + 2) {
+  background: var(--teal);
+  box-shadow: 4px 4px 0 var(--violet);
+}
+
+.cz-stickers li:nth-child(3n) {
+  background: var(--pink);
+  color: #fff;
+  box-shadow: 4px 4px 0 var(--sun);
+}
+
+.cz-stickers li:hover {
+  rotate: 0deg;
+  translate: 0 -3px;
+}
+
+/* ---------- sections ---------- */
+
+.cz-section {
+  padding: clamp(56px, 9vw, 110px) clamp(16px, 4vw, 48px) 0;
+  max-width: 1200px;
+  margin-inline: auto;
+}
+
+.cz-h2 {
+  margin-bottom: clamp(24px, 4vw, 40px);
+  font-family: var(--neon);
+  font-weight: 400;
+  font-size: clamp(30px, 5vw, 60px);
+  line-height: 1.1;
+  color: #fff;
+  text-shadow:
+    0 0 8px var(--teal),
+    0 0 24px #00e5d499;
+}
+
+.cz-h2 em {
+  font-family: var(--script);
+  font-style: normal;
+  font-size: 0.75em;
+  color: var(--pink);
+  text-shadow: 0 0 14px var(--pink);
+}
+
+/* Socials */
+.cz-accounts {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(min(15rem, 100%), 1fr));
+}
+
+.cz-account {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 14px;
+  align-items: center;
+  border: 2px solid var(--pink);
+  border-radius: 18px;
+  padding: 16px 18px;
+  background: #ff3ea50f;
+  box-shadow:
+    0 0 0 transparent,
+    inset 0 0 22px #ff3ea51f;
+  transition:
+    box-shadow 0.25s,
+    translate 0.25s,
+    border-color 0.25s;
+}
+
+.cz-accounts li:nth-child(even) .cz-account {
+  border-color: var(--teal);
+  background: #00e5d40f;
+}
+
+.cz-account:hover {
+  translate: 0 -3px;
+  box-shadow:
+    0 0 24px #ff3ea588,
+    inset 0 0 22px #ff3ea533;
+}
+
+.cz-account__icon {
+  grid-row: span 2;
+  width: 34px;
+  height: 34px;
+}
+
+.cz-account__platform {
+  font-weight: 800;
+  font-size: 17px;
+}
+
+.cz-account__handle {
+  font-size: 14px;
+  color: var(--mist);
+}
+
+/* Placeholder tile */
+.cz-ph {
+  display: grid;
+  aspect-ratio: 4 / 3;
+  place-items: center;
+  background:
+    repeating-linear-gradient(45deg, #ff3ea522 0 12px, #00e5d422 12px 24px),
+    linear-gradient(135deg, #3b0b5e, #1a0633);
+}
+
+.cz-ph span {
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  background: #12052bcc;
+  color: var(--mist);
+}
+
+.cz-media {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+/* Adventures: polaroids */
+.cz-polaroids {
+  display: grid;
+  gap: clamp(20px, 3vw, 36px);
+  grid-template-columns: repeat(auto-fill, minmax(min(17rem, 100%), 1fr));
+}
+
+.cz-polaroid {
+  rotate: var(--r, 0deg);
+  padding: 12px 12px 18px;
+  background: #fff8ee;
+  color: #241133;
+  box-shadow:
+    0 18px 40px -16px #000,
+    0 0 0 1px #0001;
+  transition:
+    rotate 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+    scale 0.35s;
+}
+
+.cz-polaroid:hover {
+  rotate: 0deg;
+  scale: 1.03;
+}
+
+.cz-polaroid__title {
+  margin-top: 12px;
+  font-family: var(--script);
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.cz-polaroid__meta {
+  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #b0217a;
+}
+
+.cz-polaroid__caption {
+  margin-top: 6px;
+  font-size: 14px;
+  color: #4a3a55;
+}
+
+/* Fitness: neon scoreboard */
+.cz-stats {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
+}
+
+.cz-stat {
+  border-radius: 22px;
+  padding: 24px;
+  background:
+    linear-gradient(#12052b, #12052b) padding-box,
+    linear-gradient(120deg, var(--pink), var(--orange), var(--teal)) border-box;
+  border: 2px solid transparent;
+}
+
+.cz-stat__value {
+  font-family: var(--neon);
+  font-size: clamp(36px, 5vw, 56px);
+  line-height: 1;
+  color: var(--sun);
+  text-shadow:
+    0 0 10px var(--orange),
+    0 0 26px #ff8a3d88;
+}
+
+.cz-stat__label {
+  margin-top: 12px;
+  font-weight: 800;
+  font-size: 18px;
+}
+
+.cz-stat__caption {
+  margin-top: 4px;
+  font-size: 14px;
+  color: var(--mist);
+}
+
+/* Memes: masonry wall */
+.cz-memes {
+  columns: 4 15rem;
+  column-gap: 16px;
+}
+
+.cz-meme {
+  break-inside: avoid;
+  margin-bottom: 16px;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #fff;
+  color: #111;
+  transition: rotate 0.3s;
+}
+
+.cz-meme:nth-child(odd):hover {
+  rotate: -1.5deg;
+}
+
+.cz-meme:nth-child(even):hover {
+  rotate: 1.5deg;
+}
+
+.cz-meme__blank {
+  display: flex;
+  min-height: 220px;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 14px;
+  background:
+    radial-gradient(60% 60% at 50% 50%, #ffffff22, transparent),
+    linear-gradient(160deg, var(--violet), var(--pink));
+}
+
+.cz-meme:nth-child(3n + 2) .cz-meme__blank {
+  min-height: 280px;
+  background: linear-gradient(160deg, #0b6e66, var(--teal));
+}
+
+.cz-meme:nth-child(3n) .cz-meme__blank {
+  min-height: 190px;
+  background: linear-gradient(160deg, var(--orange), var(--sun));
+}
+
+/* Classic meme lettering. */
+.cz-meme__top,
+.cz-meme__bottom {
+  font-family: Impact, 'Anton', 'Arial Black', sans-serif;
+  font-size: 22px;
+  line-height: 1.1;
+  text-align: center;
+  text-transform: uppercase;
+  color: #fff;
+  -webkit-text-stroke: 1.5px #000;
+  paint-order: stroke fill;
+}
+
+.cz-meme__bottom {
+  font-size: 15px;
+  opacity: 0.85;
+}
+
+.cz-meme__caption {
+  padding: 10px 14px 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Hobbies / food */
+.cz-cards {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(min(16rem, 100%), 1fr));
+}
+
+.cz-card {
+  overflow: hidden;
+  border: 1px solid #ffffff24;
+  border-radius: 20px;
+  background: #ffffff0a;
+  transition:
+    translate 0.25s,
+    box-shadow 0.25s;
+}
+
+.cz-card:hover {
+  translate: 0 -4px;
+  box-shadow: 0 16px 40px -18px var(--pink);
+}
+
+.cz-card__body {
+  padding: 16px 18px 18px;
+}
+
+.cz-card__kind {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--teal);
+}
+
+.cz-card__title {
+  margin-top: 4px;
+  font-weight: 800;
+  font-size: 18px;
+}
+
+.cz-card__caption {
+  margin-top: 4px;
+  font-size: 14px;
+  color: var(--mist);
+}
+
+/* Posts */
+.cz-posts {
+  display: grid;
+  gap: 10px;
+}
+
+.cz-posts a {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 1px dashed #ffffff33;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.cz-posts a:hover {
+  color: var(--pink);
+}
+
+.cz-posts__platform {
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--night);
+  background: var(--teal);
+}
+
+/* Footer */
+.cz-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  margin-top: clamp(64px, 10vw, 120px);
+  padding: 40px 16px max(40px, env(safe-area-inset-bottom));
+  border-top: 1px solid #ffffff1f;
+  text-align: center;
+}
+
+.cz-footer__sign {
+  font-family: var(--script);
+  font-size: clamp(26px, 4vw, 40px);
+  color: var(--pink);
+  text-shadow: 0 0 14px var(--pink);
+}
+
+.cz-footer__back {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-color: var(--teal);
+  text-underline-offset: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cz-sun,
+  .cz-palm,
+  .cz-grid,
+  .cz-road::after,
+  .cz-title {
+    animation: none;
+  }
+}

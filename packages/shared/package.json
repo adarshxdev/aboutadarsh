@@ -1,0 +1,34 @@
+{
+  "name": "@portfolio/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Content schemas, default content, CMS collection definitions and validation shared by web and api.",
+  "exports": {
+    "./content": {
+      "types": "./dist/content/index.d.ts",
+      "default": "./dist/content/index.js"
+    },
+    "./cms": {
+      "types": "./dist/cms/index.d.ts",
+      "default": "./dist/cms/index.js"
+    },
+    "./validation": {
+      "types": "./dist/validation.d.ts",
+      "default": "./dist/validation.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "content:check": "tsx scripts/content-check.ts"
+  },
+  "dependencies": {
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.13"
+  }
+}

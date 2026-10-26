@@ -1,0 +1,44 @@
+{
+  "name": "portfolio",
+  "private": true,
+  "type": "module",
+  "description": "Personal site and CMS: Next.js frontend, Express API, shared content schemas.",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "postinstall": "npm run build -w @portfolio/shared",
+    "dev": "concurrently -k -n shared,api,web -c gray,blue,magenta \"npm run dev -w @portfolio/shared\" \"npm run dev -w @portfolio/api\" \"npm run dev -w @portfolio/web\"",
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "npm run test --workspaces --if-present",
+    "test:e2e": "playwright test",
+    "content:check": "npm run content:check -w @portfolio/shared",
+    "infra:up": "docker compose up -d",
+    "infra:down": "docker compose down",
+    "db:generate": "npm run db:generate -w @portfolio/api",
+    "db:migrate": "npm run db:migrate -w @portfolio/api",
+    "db:seed": "npm run db:seed -w @portfolio/api --",
+    "admin:hash": "npm run admin:hash -w @portfolio/api --"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "@playwright/test": "^1.64.1",
+    "concurrently": "^10.0.6",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "16.3.4",
+    "globals": "^16.5.0",
+    "prettier": "^3.9.10",
+    "prettier-plugin-tailwindcss": "^0.8.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.72.0",
+    "vitest": "^5.0.5"
+  }
+}

@@ -1,0 +1,904 @@
+@import 'tailwindcss';
+
+/* ============================================================
+   Design tokens
+   ============================================================ */
+
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-heading), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, monospace;
+
+  /* Fluid type scale — plan.md §6. Interpolates; no breakpoint steps. */
+  --text-step--1: clamp(0.83rem, 0.78rem + 0.24vw, 0.94rem);
+  --text-step-0: clamp(1rem, 0.93rem + 0.36vw, 1.19rem);
+  --text-step-1: clamp(1.2rem, 1.09rem + 0.54vw, 1.5rem);
+  --text-step-2: clamp(1.44rem, 1.28rem + 0.8vw, 1.89rem);
+  --text-step-3: clamp(1.73rem, 1.49rem + 1.17vw, 2.38rem);
+  --text-step-4: clamp(2.07rem, 1.72rem + 1.75vw, 3rem);
+  --text-step-5: clamp(2.49rem, 1.98rem + 2.53vw, 3.79rem);
+
+  --spacing-gutter: clamp(1rem, 0.7rem + 1.5vw, 2.5rem);
+  --spacing-section: clamp(3rem, 2rem + 5vw, 8rem);
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Light palette on bare :root so no color is only defined inside a media block. */
+:root {
+  color-scheme: light;
+
+  --bg: oklch(99% 0.003 260);
+  --bg-subtle: oklch(97% 0.005 260);
+  --bg-raised: oklch(100% 0 0);
+  --border: oklch(90% 0.006 260);
+  --border-strong: oklch(84% 0.008 260);
+  --fg: oklch(20% 0.015 260);
+  /* Contrast-verified against --bg and --bg-subtle at AA (4.5:1) — plan.md §12. */
+  --fg-muted: oklch(43% 0.012 260);
+  --fg-subtle: oklch(51% 0.011 260);
+  --accent: oklch(48% 0.2 265);
+  --accent-fg: oklch(99% 0.005 265);
+  --accent-subtle: oklch(95% 0.03 265);
+  --success: oklch(47% 0.13 155);
+  --danger: oklch(50% 0.2 25);
+  --shadow: 0 1px 2px oklch(0% 0 0 / 0.04), 0 8px 24px oklch(0% 0 0 / 0.06);
+}
+
+/* System dark — only when the user hasn't explicitly chosen light. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+
+    --bg: oklch(16% 0.012 260);
+    --bg-subtle: oklch(19% 0.014 260);
+    --bg-raised: oklch(22% 0.016 260);
+    --border: oklch(29% 0.016 260);
+    --border-strong: oklch(38% 0.018 260);
+    --fg: oklch(96% 0.005 260);
+    --fg-muted: oklch(78% 0.012 260);
+    --fg-subtle: oklch(69% 0.012 260);
+    --accent: oklch(78% 0.14 265);
+    --accent-fg: oklch(16% 0.02 265);
+    --accent-subtle: oklch(30% 0.06 265);
+    --success: oklch(78% 0.14 155);
+    --danger: oklch(72% 0.16 25);
+    --shadow: 0 1px 2px oklch(0% 0 0 / 0.3), 0 8px 24px oklch(0% 0 0 / 0.35);
+  }
+}
+
+/* Explicit choice wins in both directions. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg: oklch(16% 0.012 260);
+  --bg-subtle: oklch(19% 0.014 260);
+  --bg-raised: oklch(22% 0.016 260);
+  --border: oklch(29% 0.016 260);
+  --border-strong: oklch(38% 0.018 260);
+  --fg: oklch(96% 0.005 260);
+  --fg-muted: oklch(78% 0.012 260);
+  --fg-subtle: oklch(69% 0.012 260);
+  --accent: oklch(78% 0.14 265);
+  --accent-fg: oklch(16% 0.02 265);
+  --accent-subtle: oklch(30% 0.06 265);
+  --success: oklch(78% 0.14 155);
+  --danger: oklch(72% 0.16 25);
+  --shadow: 0 1px 2px oklch(0% 0 0 / 0.3), 0 8px 24px oklch(0% 0 0 / 0.35);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-subtle: var(--bg-subtle);
+  --color-bg-raised: var(--bg-raised);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-subtle: var(--accent-subtle);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+}
+
+/* ============================================================
+   Base
+   ============================================================ */
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  /* Symptom guard. Real fixes live on the offending elements — plan.md §6. */
+  overflow-x: clip;
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  overflow-x: clip;
+  background-color: var(--bg);
+  color: var(--fg);
+  font-size: var(--text-step-0);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  /* Landscape notches. */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* One heading face everywhere. Unlayered, so it wins over font-weight utilities. */
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-heading), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+p,
+li {
+  text-wrap: pretty;
+}
+
+/* Long URLs and emails must never widen the page. */
+a {
+  overflow-wrap: anywhere;
+}
+
+/* Inputs at 16px minimum, or iOS Safari zooms the viewport on focus. */
+input,
+textarea,
+select,
+button {
+  font: inherit;
+  font-size: max(1rem, var(--text-step-0));
+}
+
+button,
+a,
+[role='button'] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: color-mix(in oklch, var(--accent) 18%, transparent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+::selection {
+  background: color-mix(in oklch, var(--accent) 25%, transparent);
+}
+
+/* ============================================================
+   Utilities
+   ============================================================ */
+
+@utility container-page {
+  width: 100%;
+  max-width: 80rem;
+  margin-inline: auto;
+  padding-inline: var(--spacing-gutter);
+}
+
+/* Auto-fitting grid. min(…,100%) is what prevents overflow below 320px. */
+@utility auto-grid {
+  display: grid;
+  gap: var(--spacing-gutter);
+  grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
+}
+
+/* Flex/grid children default to min-content and refuse to shrink. */
+@utility min-w-0-fix {
+  min-width: 0;
+}
+
+@utility scroll-x {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ============================================================
+   Motion
+   ============================================================ */
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes line-rise {
+  from {
+    transform: translateY(110%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/*
+ * Above-the-fold reveal, driven by CSS rather than JS.
+ * The hero headline is the LCP element; gating it on hydration pushed LCP past
+ * 3s on throttled mobile. CSS animation starts at first paint instead.
+ */
+.line-rise > span > span {
+  animation: line-rise 0.7s var(--ease-out-expo) both;
+  animation-delay: calc(var(--line-index, 0) * 0.07s);
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/*
+ * Above-the-fold fade+rise, CSS-driven for the same reason as .line-rise.
+ * Kept short: the hero paragraph is the LCP element, and every millisecond of
+ * delay + duration lands directly on LCP.
+ */
+.rise-in {
+  animation: rise-in 0.5s var(--ease-out-expo) both;
+  animation-delay: var(--rise-delay, 0s);
+}
+
+/*
+ * Scroll reveals — CSS transitions driven by a tiny IntersectionObserver, not
+ * by the animation library. These appear on every page, so importing Motion for
+ * them put ~50KB of JS on routes that need no physics at all (plan.md §7).
+ */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.6s var(--ease-out-expo),
+    transform 0.6s var(--ease-out-expo);
+  transition-delay: var(--reveal-delay, 0s);
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Stagger children without per-item JS. */
+.reveal-group > * {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.6s var(--ease-out-expo),
+    transform 0.6s var(--ease-out-expo);
+}
+
+.reveal-group.is-visible > * {
+  opacity: 1;
+  transform: none;
+}
+
+.reveal-group.is-visible > *:nth-child(1) {
+  transition-delay: 0ms;
+}
+.reveal-group.is-visible > *:nth-child(2) {
+  transition-delay: 60ms;
+}
+.reveal-group.is-visible > *:nth-child(3) {
+  transition-delay: 120ms;
+}
+.reveal-group.is-visible > *:nth-child(4) {
+  transition-delay: 180ms;
+}
+.reveal-group.is-visible > *:nth-child(5) {
+  transition-delay: 240ms;
+}
+.reveal-group.is-visible > *:nth-child(6) {
+  transition-delay: 300ms;
+}
+.reveal-group.is-visible > *:nth-child(n + 7) {
+  transition-delay: 360ms;
+}
+
+/* No JS, no reveal: content must never be permanently invisible. */
+.no-js .reveal,
+.no-js .reveal-group > * {
+  opacity: 1;
+  transform: none;
+}
+
+@keyframes menu-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Mobile menu — CSS, so the animation library stays off the global bundle. */
+.menu-panel {
+  animation: menu-in 0.2s var(--ease-out-expo) both;
+}
+
+.menu-panel > * {
+  animation: rise-in 0.35s var(--ease-out-expo) both;
+  animation-delay: calc(var(--item-index, 0) * 0.04s);
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(3%, -4%, 0) scale(1.06);
+  }
+  66% {
+    transform: translate3d(-3%, 3%, 0) scale(0.97);
+  }
+}
+
+/* Non-negotiable — plan.md §5. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  /*
+   * Reveals are entrance animations, so reduced motion removes them entirely —
+   * content is visible from the start rather than waiting on a scroll trigger.
+   * Without this, anything below the fold stays at opacity 0 until scrolled to.
+   */
+  .reveal,
+  .reveal-group > *,
+  .rise-in,
+  .line-rise > span > span,
+  .menu-panel,
+  .menu-panel > * {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ============================================================
+   Content pages (résumé, case studies, privacy…) share the home page's dark
+   palette, so the site reads as one. The admin keeps the system theme.
+   ============================================================ */
+
+html:has(.site-theme),
+html:has(.site-theme) body {
+  background: #04070c;
+}
+
+.site-theme {
+  color-scheme: dark;
+
+  --bg: #04070c;
+  --bg-subtle: #0a0e15;
+  --bg-raised: #0e131c;
+  --border: #efeae424;
+  --border-strong: #efeae447;
+  --fg: #efeae4;
+  --fg-muted: #efeae4b3;
+  --fg-subtle: #efeae48f;
+  --accent: #ff9dbf;
+  --accent-fg: #04070c;
+  --accent-subtle: #ff9dbf1f;
+  --success: #7df3d6;
+  --danger: #ff8a7a;
+  --shadow: 0 1px 2px #0000004d, 0 8px 24px #00000059;
+
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
+  backdrop-filter: blur(14px) saturate(1.2);
+}
+
+.site-header__link {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  padding: 0 12px;
+  font-size: 14px;
+  color: var(--fg-muted);
+  transition: color 0.2s;
+}
+
+.site-header__link:hover {
+  color: var(--fg);
+}
+
+.site-header__cta {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 0 16px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.site-header__cta:hover {
+  border-color: var(--accent);
+}
+
+/* ============================================================
+   Print — /resume must produce a clean PDF via Cmd+P
+   ============================================================ */
+
+@media print {
+  :root,
+  .site-theme {
+    --bg: #fff;
+    --bg-subtle: #fff;
+    --bg-raised: #fff;
+    --fg: #000;
+    --fg-muted: #333;
+    --fg-subtle: #555;
+    --border: #ccc;
+    --accent: #000;
+  }
+  html {
+    font-size: 11pt;
+  }
+  body,
+  html:has(.site-theme),
+  html:has(.site-theme) body {
+    background: #fff;
+    color: #000;
+  }
+  [data-print='hide'] {
+    display: none !important;
+  }
+  a {
+    text-decoration: none;
+    color: #000;
+  }
+  .print-break-inside-avoid {
+    break-inside: avoid;
+  }
+}
+
+/* ============================================================
+   Tech chips (about page): logo in muted ink, brand colour on hover.
+   ============================================================ */
+
+.tech-chip {
+  --brand: var(--brand-light);
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0 14px 0 10px;
+  font-size: var(--text-step--1);
+  color: var(--fg-muted);
+  background: var(--bg-subtle);
+  transition:
+    color 0.25s,
+    border-color 0.25s,
+    box-shadow 0.3s,
+    transform 0.3s var(--ease-out-expo);
+}
+
+.tech-chip[data-core] {
+  color: var(--fg);
+}
+
+.tech-chip__icon {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  color: var(--fg-subtle);
+  transition:
+    color 0.25s,
+    transform 0.3s var(--ease-out-expo);
+}
+
+.tech-chip:hover {
+  color: var(--fg);
+  border-color: color-mix(in srgb, var(--brand) 55%, var(--border));
+  box-shadow: 0 6px 20px -8px color-mix(in srgb, var(--brand) 60%, transparent);
+  transform: translateY(-1px);
+}
+
+.tech-chip:hover .tech-chip__icon {
+  color: var(--brand);
+  transform: scale(1.1);
+}
+
+/* Dark brand colours (Next.js, Express…) need the lifted variant on dark backgrounds. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .tech-chip {
+    --brand: var(--brand-dark);
+  }
+}
+:root[data-theme='dark'] .tech-chip {
+  --brand: var(--brand-dark);
+}
+
+.tech-monogram {
+  display: inline-grid;
+  place-items: center;
+  border-radius: 5px;
+  background: var(--border);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+  color: var(--fg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tech-chip,
+  .tech-chip__icon {
+    transition: none;
+  }
+}
+
+/* ============================================================
+   Bead name (logo on every page, /justme). The text underneath is the
+   fallback until the canvas is ready.
+   ============================================================ */
+
+.particle-name {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  line-height: 1;
+}
+
+.particle-name__text {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  font-family: var(--font-heading), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+  transition: opacity 0.3s;
+}
+
+.particle-name__dot {
+  color: #ff9dbf;
+}
+
+.particle-name__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.particle-name[data-ready] .particle-name__text {
+  opacity: 0;
+}
+
+/* Home page: the bigger mark. */
+.particle-name--lg {
+  width: clamp(116px, 12vw, 196px);
+  aspect-ratio: 4 / 1;
+  font-size: clamp(22px, 2.3vw, 37px);
+}
+
+/* Every other page: compact. */
+.particle-name--sm {
+  width: 104px;
+  height: 26px;
+  font-size: 20px;
+}
+
+/* ============================================================
+   /justme — the intro as its own page.
+   ============================================================ */
+
+.justme {
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  align-content: center;
+  gap: 22px;
+  padding: max(24px, env(safe-area-inset-top)) clamp(16px, 4vw, 48px) max(32px, env(safe-area-inset-bottom));
+  background: radial-gradient(60% 50% at 50% 42%, #0b1220, #04070c 70%);
+  color: #efeae4;
+  color-scheme: dark;
+}
+
+html:has(.justme),
+html:has(.justme) body {
+  background: #04070c;
+}
+
+.justme__name {
+  width: min(92vw, 960px);
+  height: min(36vh, 300px);
+  font-size: clamp(48px, 14vw, 180px);
+  cursor: crosshair;
+}
+
+.justme__name .particle-name__text {
+  justify-content: center;
+}
+
+.justme__rule {
+  width: min(88vw, 520px);
+  height: 1px;
+  overflow: hidden;
+  background: #efeae42e;
+}
+
+.justme__rule i {
+  display: block;
+  height: 100%;
+  background: #efeae4;
+  transform-origin: left;
+  animation: justme-rule 1.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes justme-rule {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+.justme__meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 24px;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #efeae4a3;
+}
+
+.justme__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.justme__btn {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  border: 1px solid #efeae466;
+  border-radius: 999px;
+  padding: 0 22px;
+  font-size: 15px;
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    color 0.2s;
+}
+
+.justme__btn:hover {
+  border-color: #ff9dbf;
+}
+
+.justme__btn--solid {
+  border-color: #efeae4;
+  background: #efeae4;
+  color: #04070c;
+}
+
+.justme__btn--solid:hover {
+  background: #ff9dbf;
+  border-color: #ff9dbf;
+}
+
+.justme__hint {
+  font-size: 12px;
+  color: #efeae48a;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .justme__rule i {
+    animation: none;
+  }
+}
+
+/* ============================================================
+   /baki — a picture rebuilt from coloured beads.
+   ============================================================ */
+
+html:has(.baki),
+html:has(.baki) body {
+  background: #0a0405;
+}
+
+.baki {
+  display: grid;
+  min-height: 100dvh;
+  grid-template-rows: 1fr auto;
+  justify-items: center;
+  gap: 16px;
+  padding: max(16px, env(safe-area-inset-top)) clamp(12px, 3vw, 40px) max(20px, env(safe-area-inset-bottom));
+  background: radial-gradient(70% 60% at 50% 40%, #2a0b0d, #0a0405 75%);
+  color: #efeae4;
+  color-scheme: dark;
+}
+
+.particle-image {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.particle-image canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+.particle-image__missing {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  text-align: center;
+  color: #efeae4b3;
+}
+
+.baki__image {
+  width: min(100%, 720px);
+  height: calc(100dvh - 150px);
+  min-height: 420px;
+}
+
+.baki__caption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px 20px;
+}
+
+.baki__title {
+  font-family: var(--font-heading), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 800;
+  font-size: clamp(22px, 3vw, 34px);
+  letter-spacing: -0.03em;
+}
+
+.baki__hint {
+  font-size: 13px;
+  color: #efeae48a;
+}
+
+.baki__back {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  font-size: 14px;
+  color: #efeae4;
+  text-decoration: underline;
+  text-decoration-color: #efeae42e;
+  text-underline-offset: 5px;
+}
+
+/* ============================================================
+   Professional ↔ Casual switch (used on every header).
+   ============================================================ */
+
+.mode {
+  position: relative;
+  display: inline-grid;
+  grid-template-columns: 1fr 1fr;
+  min-width: 0;
+  margin: 0;
+  border: 1px solid #efeae433;
+  border-radius: 999px;
+  padding: 3px;
+  background: #04070c99;
+  backdrop-filter: blur(14px) saturate(1.2);
+  isolation: isolate;
+}
+
+.mode__thumb {
+  position: absolute;
+  z-index: -1;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  border-radius: 999px;
+  background: #efeae4;
+  transition:
+    transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
+    background 0.35s,
+    box-shadow 0.35s;
+}
+
+.mode[data-mode='casual'] .mode__thumb {
+  transform: translateX(100%);
+  background: linear-gradient(110deg, #ff3ea5, #ff8a3d 55%, #00e5d4);
+  box-shadow:
+    0 0 14px #ff3ea5aa,
+    0 0 28px #00e5d455;
+}
+
+.mode__option {
+  position: relative;
+  cursor: pointer;
+}
+
+.mode__option input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.mode__option span {
+  display: inline-flex;
+  min-height: 30px;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #efeae4b3;
+  white-space: nowrap;
+  transition: color 0.3s;
+}
+
+.mode__option input:checked + span {
+  color: #04070c;
+}
+
+.mode__option:hover input:not(:checked) + span {
+  color: #efeae4;
+}
+
+.mode__option input:focus-visible + span {
+  outline: 2px solid #ff9dbf;
+  outline-offset: 1px;
+  border-radius: 999px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mode__thumb {
+    transition: none;
+  }
+}

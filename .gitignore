@@ -1,0 +1,17 @@
+node_modules
+.next
+out
+.env
+.env*.local
+.DS_Store
+*.tsbuildinfo
+next-env.d.ts
+.vercel
+tsconfig.tsbuildinfo
+dist
+playwright-report
+test-results
+.env.test
+
+# Employer design documents (PRD/ERD/HLD) — reference only, may be confidential. Never commit.
+docs/source/

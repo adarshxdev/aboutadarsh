@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Lint, typecheck, test, build
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17.11-alpine
+        env:
+          POSTGRES_USER: portfolio
+          POSTGRES_PASSWORD: portfolio
+          POSTGRES_DB: portfolio_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U portfolio" --health-interval 3s --health-timeout 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run content:check
+      - name: Unit and integration tests
+        run: npm test
+        env:
+          TEST_DATABASE_URL: postgres://portfolio:portfolio@localhost:5432/portfolio_test
+      - run: npm run build
+
+  e2e:
+    name: End-to-end (Docker stack + Playwright)
+    runs-on: ubuntu-latest
+    needs: checks
+    env:
+      E2E_ADMIN_EMAIL: ci-admin@example.com
+      E2E_ADMIN_PASSWORD: ci-only-password-not-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Start infrastructure
+        run: docker compose up -d --wait db redis redis-http storage && docker compose up storage-init
+      - name: Write env files (throwaway CI credentials)
+        run: |
+          cp apps/api/.env.example apps/api/.env
+          cp apps/web/.env.example apps/web/.env.local
+          {
+            echo "DATABASE_URL=postgres://portfolio:portfolio@localhost:5433/portfolio"
+            echo "ADMIN_EMAIL=$E2E_ADMIN_EMAIL"
+            npm run -s admin:hash -- "$E2E_ADMIN_PASSWORD"
+            echo "REVALIDATE_SECRET=ci-revalidate-secret"
+          } >> apps/api/.env
+          sed -i "s/^REVALIDATE_SECRET=.*/REVALIDATE_SECRET=ci-revalidate-secret/" apps/web/.env.local
+      - run: npm run db:migrate && npm run db:seed
+      - name: Build and start api + web
+        run: |
+          npm run build -w @portfolio/api -w @portfolio/web
+          (cd apps/api && node --env-file=.env dist/server.js > ../../api.log 2>&1 &)
+          (cd apps/web && npx next start -p 3000 > ../../web.log 2>&1 &)
+          npx wait-on -t 60000 http://localhost:4000/api/health http://localhost:3000
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - name: Lighthouse (reported, not blocking — the WebGL home page is heavy by design)
+        continue-on-error: true
+        run: npx -y @lhci/cli@0.15.x autorun --config=apps/web/lighthouserc.json
+      - if: failure()
+        run: tail -n 200 api.log web.log
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+
+  docker:
+    name: Docker images build
+    runs-on: ubuntu-latest
+    needs: checks
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose --profile app build

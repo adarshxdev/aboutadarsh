@@ -1,0 +1,116 @@
+# Local stack: Postgres, Redis (+ Upstash-compatible REST), S3-compatible storage.
+#
+#   docker compose up -d                 # infrastructure only; run the app with `npm run dev`
+#   docker compose --profile app up -d   # also run the production api (:4000) and web (:3000) images
+#
+# Credentials here are local-only defaults. Ports bind to 127.0.0.1, so nothing
+# is exposed beyond this machine.
+
+name: portfolio
+
+services:
+  db:
+    image: postgres:17.11-alpine
+    environment:
+      POSTGRES_USER: portfolio
+      POSTGRES_PASSWORD: portfolio
+      POSTGRES_DB: portfolio
+    ports: ['127.0.0.1:5433:5432']
+    volumes: [db-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U portfolio -d portfolio']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:8.8.3-alpine
+    ports: ['127.0.0.1:6379:6379']
+    volumes: [redis-data:/data]
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  # The app talks to Redis through Upstash's REST API (what it uses on Vercel);
+  # this translates that API to the local Redis.
+  redis-http:
+    image: hiett/serverless-redis-http:0.0.10
+    environment:
+      SRH_MODE: env
+      SRH_TOKEN: local-redis-token
+      SRH_CONNECTION_STRING: redis://redis:6379
+    ports: ['127.0.0.1:8079:80']
+    depends_on:
+      redis: { condition: service_healthy }
+
+  # S3-compatible object storage (stands in for R2 / S3 / Supabase Storage).
+  storage:
+    image: rustfs/rustfs:1.0.3
+    environment:
+      RUSTFS_ACCESS_KEY: portfolio
+      RUSTFS_SECRET_KEY: portfolio-secret
+    ports: ['127.0.0.1:9000:9000', '127.0.0.1:9001:9001']
+    volumes: [storage-data:/data]
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'curl -fs http://localhost:9000/health || wget -qO- http://localhost:9000/health || exit 1',
+        ]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  # One-shot: create the bucket, make it publicly readable, allow browser uploads.
+  storage-init:
+    image: amazon/aws-cli:2.38.5
+    depends_on:
+      storage: { condition: service_healthy }
+    environment:
+      AWS_ACCESS_KEY_ID: portfolio
+      AWS_SECRET_ACCESS_KEY: portfolio-secret
+      AWS_DEFAULT_REGION: us-east-1
+    volumes: ['./docker/storage-init.sh:/storage-init.sh:ro']
+    entrypoint: ['sh', '/storage-init.sh']
+
+  api:
+    profiles: [app]
+    build: { context: ., dockerfile: apps/api/Dockerfile }
+    env_file: [{ path: apps/api/.env, required: false }]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://portfolio:portfolio@db:5432/portfolio
+      UPSTASH_REDIS_REST_URL: http://redis-http:80
+      UPSTASH_REDIS_REST_TOKEN: local-redis-token
+      S3_ENDPOINT: http://storage:9000
+      # Browsers can't resolve "storage", so presigned upload URLs use localhost.
+      S3_PRESIGN_ENDPOINT: http://localhost:9000
+      S3_PUBLIC_URL: http://localhost:9000/portfolio
+      SITE_URL: http://localhost:3000
+      WEB_URL: http://web:3000
+    ports: ['127.0.0.1:4000:4000']
+    depends_on:
+      db: { condition: service_healthy }
+      redis-http: { condition: service_started }
+      storage-init: { condition: service_completed_successfully }
+
+  web:
+    profiles: [app]
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args: { API_URL: 'http://api:4000' }
+    env_file: [{ path: apps/web/.env.local, required: false }]
+    environment:
+      API_URL: http://api:4000
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+    ports: ['127.0.0.1:3000:3000']
+    depends_on:
+      api: { condition: service_healthy }
+
+volumes:
+  db-data:
+  redis-data:
+  storage-data:
